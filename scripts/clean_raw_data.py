@@ -14,29 +14,24 @@ import numpy as np
 srrs2_path = sys.argv[1]
 cty_path = sys.argv[2]
 
-# First, we import the data from a local file, and extract Minnesota's data.
 srrs2 = pd.read_csv(srrs2_path)
 srrs2.columns = srrs2.columns.map(str.strip)
-srrs_mn = srrs2[srrs2.state == 'MN'].copy()
+srrs2.rename(columns={'cntyfips': 'ctfips'}, inplace=True)
 
-# Next, obtain the county-level predictor, uranium, by combining two variables.
-srrs_mn['fips'] = srrs_mn.stfips * 1000 + srrs_mn.cntyfips
 cty = pd.read_csv(cty_path)
-cty_mn = cty[cty.st == 'MN'].copy()
-cty_mn['fips'] = 1000 * cty_mn.stfips + cty_mn.ctfips
 
-# Use the `merge` method to combine home- and county-level information in a single DataFrame.
-srrs_mn = srrs_mn.merge(cty_mn[['fips', 'Uppm']], on='fips')
-srrs_mn = srrs_mn.drop_duplicates(subset='idnum')
+data = srrs2.merge(cty[['stfips', 'ctfips', 'Uppm']],
+                   on=['stfips', 'ctfips'])
+data.county = data.county.str.strip().str.replace(' ', '_').str.replace('.', '')
+data['state_county'] = data.state + '-' + data.county
+data.drop_duplicates(subset=['idnum'], inplace=True)
 
-# We also need a lookup table (`dict`) for each unique county, for indexing.
-srrs_mn.county = srrs_mn.county.map(str.strip)
-mn_counties = srrs_mn.county.unique()
-county_lookup = dict(zip(mn_counties, range(len(mn_counties))))
-
-# Finally, create local copies of variables.
-srrs_mn['county_idx'] = srrs_mn.county.replace(county_lookup).values
-
-out = srrs_mn[['floor', 'county', 'county_idx', 'Uppm', 'activity']]
-out.rename(columns={'Uppm': 'county_uranium', 'activity': 'radon'}, inplace=True)
-out.to_csv(sys.stdout, sep='\t', index=False)
+data.county = data.county.apply(str.strip)
+data.dropna(subset=['county'], inplace=True)
+counties = data.state_county.unique()
+county_lookup = dict(zip(counties, range(len(counties))))
+data['county_idx'] = data.state_county.replace(county_lookup)
+data.rename(columns={'Uppm': 'county_uranium', 'activity': 'radon'},
+            inplace=True)
+(data[['floor', 'state', 'state_county', 'county_idx', 'county_uranium', 'radon']]
+     .to_csv(sys.stdout, sep='\t', index=False))
