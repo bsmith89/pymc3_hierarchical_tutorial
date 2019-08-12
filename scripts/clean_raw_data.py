@@ -24,14 +24,17 @@ data = srrs2.merge(cty[['stfips', 'ctfips', 'Uppm']],
                    on=['stfips', 'ctfips'])
 data.county = data.county.str.strip().str.replace(' ', '_').str.replace('.', '')
 data['state_county'] = data.state + '-' + data.county
+data['is_basement'] = (data.floor == 0)
 data.drop_duplicates(subset=['idnum'], inplace=True)
 
 data.county = data.county.apply(str.strip)
 data.dropna(subset=['county'], inplace=True)
-counties = data.state_county.unique()
-county_lookup = dict(zip(counties, range(len(counties))))
-data['county_idx'] = data.state_county.replace(county_lookup)
+# counties = data.state_county.unique()
+# county_lookup = dict(zip(counties, range(len(counties))))
+# data['county_idx'] = data.state_county.replace(county_lookup)
 data.rename(columns={'Uppm': 'county_uranium', 'activity': 'radon'},
             inplace=True)
-(data[['floor', 'state', 'state_county', 'county_idx', 'county_uranium', 'radon']]
+(data[['state', 'state_county',
+       # 'county_idx',
+       'county_uranium', 'is_basement', 'radon']]
      .to_csv(sys.stdout, sep='\t', index=False))
