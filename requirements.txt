@@ -8,4 +8,5 @@ arviz
 theano
 pymc3
 statsmodels
+seaborn
 mkl-service
