@@ -1,0 +1,11 @@
+ipython
+jupyter
+patsy
+numpy
+scipy
+matplotlib
+arviz
+theano
+pymc3
+statsmodels
+mkl-service
